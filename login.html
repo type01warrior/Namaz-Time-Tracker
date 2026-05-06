@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sign In</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* FIX 1: Dark background from the very first paint — no white flash */
+        html { background: #0f0f1a; }
+
+        body {
+            background: #0f0f1a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: sans-serif;
+            /* FIX 2: Hide until Firebase auth check completes */
+            visibility: hidden;
+        }
+        body.ready { visibility: visible; }
+
+        .card {
+            background: #1a1a2e;
+            border-radius: 24px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 380px;
+        }
+        .logo { text-align: center; margin-bottom: 24px; }
+        .logo img { width: 80px; height: 80px; object-fit: contain; border-radius: 16px; }
+        .logo h1 { font-size: 1.3rem; font-weight: 900; color: #ffffff; margin-top: 10px; letter-spacing: 1px; }
+        .logo p { font-size: 0.78rem; color: #aaaacc; margin-top: 4px; }
+
+        .tabs { display: flex; background: #0f0f1a; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 10px; text-align: center; border-radius: 9px; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: #777; transition: 0.2s; }
+        .tab.active { background: #fbbf24; color: #000000; }
+
+        .lbl { font-size: 0.72rem; font-weight: 700; color: #aaaacc; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .field { margin-bottom: 14px; }
+        .pw-wrap { position: relative; display: flex; align-items: center; }
+
+        /* FIX 3: Use real <input> elements — contenteditable causes MIUI/Android bugs */
+        .real-input {
+            width: 100%;
+            height: 50px;
+            padding: 14px 16px;
+            border: 2px solid #2e2e4a;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            background: #0f0f1a;
+            color: #ffffff;
+            outline: none;
+            caret-color: #fbbf24;
+            -webkit-appearance: none;
+        }
+        .real-input::placeholder { color: #555577; }
+        .real-input:focus { border-color: #fbbf24; }
+        .real-input.pw-input { padding-right: 50px; }
+
+        /* FIX 4: Prevent Android autofill yellow background */
+        .real-input:-webkit-autofill,
+        .real-input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px #0f0f1a inset !important;
+            -webkit-text-fill-color: #ffffff !important;
+            border-color: #2e2e4a;
+        }
+
+        .eye {
+            position: absolute;
+            right: 0;
+            width: 46px;
+            height: 50px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 4px;
+            background: #fbbf24;
+            color: #000000;
+            letter-spacing: 0.5px;
+            -webkit-appearance: none;
+        }
+        .btn:active { opacity: 0.85; }
+
+        .forgot { text-align: right; margin-bottom: 12px; }
+        .forgot span { font-size: 0.78rem; color: #fbbf24; font-weight: 700; cursor: pointer; }
+
+        .skip { text-align: center; margin-top: 20px; }
+        .skip span { font-size: 0.83rem; color: #666688; font-weight: 600; cursor: pointer; }
+
+        .msg { padding: 11px 14px; border-radius: 9px; font-size: 0.83rem; font-weight: 700; margin-bottom: 13px; display: none; text-align: center; }
+        .err { background: #3a0f0f; color: #ff6b6b; }
+        .suc { background: #0f3a1a; color: #6bff9e; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="logo">
+        <img src="icon.png" onerror="this.style.display='none'">
+        <h1>NAMAZ TIMES</h1>
+        <p>Sign in to sync your prayer data</p>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</div>
+        <div class="tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <!-- SIGN IN -->
+    <div id="form-signin">
+        <div class="field">
+            <label class="lbl">Email</label>
+            <input class="real-input" id="si-email" type="email" placeholder="Enter your email" autocomplete="email" onkeydown="handleKey(event,'signin')">
+        </div>
+        <div class="field">
+            <label class="lbl">Password</label>
+            <div class="pw-wrap">
+                <input class="real-input pw-input" id="si-pass" type="password" placeholder="Enter your password" autocomplete="current-password" onkeydown="handleKey(event,'signin')">
+                <button class="eye" type="button" onclick="toggleEye('si-pass',this)">👁️</button>
+            </div>
+        </div>
+        <div class="forgot"><span onclick="forgotPassword()">Forgot Password?</span></div>
+        <button class="btn" onclick="signIn()">SIGN IN</button>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="form-signup" style="display:none;">
+        <div class="field">
+            <label class="lbl">Email</label>
+            <input class="real-input" id="su-email" type="email" placeholder="Enter your email" autocomplete="email">
+        </div>
+        <div class="field">
+            <label class="lbl">Password</label>
+            <div class="pw-wrap">
+                <input class="real-input pw-input" id="su-pass" type="password" placeholder="Min 6 characters" autocomplete="new-password">
+                <button class="eye" type="button" onclick="toggleEye('su-pass',this)">👁️</button>
+            </div>
+        </div>
+        <div class="field">
+            <label class="lbl">Confirm Password</label>
+            <div class="pw-wrap">
+                <input class="real-input pw-input" id="su-pass2" type="password" placeholder="Repeat password" autocomplete="new-password">
+                <button class="eye" type="button" onclick="toggleEye('su-pass2',this)">👁️</button>
+            </div>
+        </div>
+        <button class="btn" onclick="signUp()">CREATE ACCOUNT</button>
+    </div>
+
+    <div class="skip"><span onclick="skipLogin()">Skip for now →</span></div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyCPUC-VaYCdrdLrDNFcSl1-XDrBGVDnVRg",
+    authDomain: "namaz-tracker-6d0df.firebaseapp.com",
+    projectId: "namaz-tracker-6d0df",
+    storageBucket: "namaz-tracker-6d0df.firebasestorage.app",
+    messagingSenderId: "361709845374",
+    appId: "1:361709845374:web:63325834cde1d1f112d12f"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// FIX 5: Check if user is already logged in — skip login screen entirely
+// This runs ONCE on load. If already signed in → go straight to app.
+// If not → show the login UI (no white screen, no duplicate screen).
+auth.onAuthStateChanged(function(user) {
+    if (user) {
+        // Already logged in — redirect silently, user never sees login
+        goToApp();
+    } else {
+        // Not logged in — reveal the UI now that we know
+        document.body.classList.add('ready');
+    }
+});
+
+// FIX 6: Eye toggle now works correctly with real <input> elements
+function toggleEye(id, btn) {
+    const el = document.getElementById(id);
+    if (el.type === 'password') {
+        el.type = 'text';
+        btn.innerText = '🙈';
+    } else {
+        el.type = 'password';
+        btn.innerText = '👁️';
+    }
+}
+
+function handleKey(e, form) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (form === 'signin') signIn();
+        else signUp();
+    }
+}
+
+function switchTab(tab) {
+    document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+    document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+    document.getElementById('form-signin').style.display = tab === 'signin' ? 'block' : 'none';
+    document.getElementById('form-signup').style.display = tab === 'signup' ? 'block' : 'none';
+    hideMsg();
+}
+
+function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.innerText = text;
+    el.className = 'msg ' + (type === 'error' ? 'err' : 'suc');
+    el.style.display = 'block';
+}
+function hideMsg() { document.getElementById('msg').style.display = 'none'; }
+
+function signIn() {
+    const email = document.getElementById('si-email').value.trim();
+    const pass = document.getElementById('si-pass').value;
+    if (!email || !pass) { showMsg('Please fill in all fields!', 'error'); return; }
+    showMsg('Signing in...', 'success');
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(() => goToApp())
+        .catch(err => showMsg(getErr(err.code), 'error'));
+}
+
+function signUp() {
+    const email = document.getElementById('su-email').value.trim();
+    const pass = document.getElementById('su-pass').value;
+    const pass2 = document.getElementById('su-pass2').value;
+    if (!email || !pass || !pass2) { showMsg('Please fill in all fields!', 'error'); return; }
+    if (pass !== pass2) { showMsg('Passwords do not match!', 'error'); return; }
+    if (pass.length < 6) { showMsg('Password must be at least 6 chars!', 'error'); return; }
+    showMsg('Creating account...', 'success');
+    auth.createUserWithEmailAndPassword(email, pass)
+        .then(() => goToApp())
+        .catch(err => showMsg(getErr(err.code), 'error'));
+}
+
+function forgotPassword() {
+    const email = document.getElementById('si-email').value.trim();
+    if (!email) { showMsg('Enter your email above first!', 'error'); return; }
+    auth.sendPasswordResetEmail(email)
+        .then(() => showMsg('✅ Reset email sent! Check inbox.', 'success'))
+        .catch(err => showMsg(getErr(err.code), 'error'));
+}
+
+function goToApp() {
+    if (window.AndroidBridge) AndroidBridge.goToMain();
+    else window.location.replace('index.html');
+}
+function skipLogin() {
+    if (window.AndroidBridge) AndroidBridge.goToMain();
+    else window.location.replace('index.html');
+}
+
+function getErr(code) {
+    switch(code) {
+        case 'auth/user-not-found': return '❌ No account with this email!';
+        case 'auth/wrong-password': return '❌ Wrong password!';
+        case 'auth/invalid-credential': return '❌ Wrong email or password!';
+        case 'auth/email-already-in-use': return '❌ Email already registered!';
+        case 'auth/invalid-email': return '❌ Invalid email address!';
+        case 'auth/weak-password': return '❌ Password too weak!';
+        case 'auth/too-many-requests': return '❌ Too many attempts! Try later.';
+        default: return '❌ ' + code;
+    }
+}
+</script>
+</body>
+</html>

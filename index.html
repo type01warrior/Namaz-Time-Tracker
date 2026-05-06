@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000" id="theme-meta">
     
-    <title>Namaz Time &amp; Tracker</title>
+    <title>Namaz Times</title>
     
     <link rel="manifest" href="manifest.json">
     
@@ -24,7 +24,7 @@
         :root { --max-w: 500px; --font: 'Lexend', sans-serif; --br: 24px; --shadow: 0 10px 30px rgba(0,0,0,0.5); --b-style: solid; --skew: 0deg; --btn-text: #000; --ar-size: 1.4rem; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: var(--font); font-weight: 800; }
         
-        html, body { width: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+        html, body { width: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--text); overscroll-behavior: none; }
         body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 15px; padding-top: env(safe-area-inset-top, 15px); padding-bottom: env(safe-area-inset-bottom, 15px); overflow-x: hidden; transition: background 0.3s ease, color 0.3s ease; }
         
         .ar { font-family: 'Noto Naskh Arabic', serif !important; font-weight: 700 !important; direction: rtl; }
@@ -55,15 +55,15 @@
         body.theme-sahara { --p: #ff7a59; --s: #cc5233; --btn-text: #fff; }
 
         /* HEADER CONTROLS */
-        .top-bar { width: 100%; max-width: var(--max-w); display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 20px; flex-shrink: 0; padding: 0 5px; }
-        .app-brand { display: flex; align-items: center; gap: 10px; }
-        .brand-icon-wrap { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); overflow: hidden; background: transparent; }
+        .top-bar { width: 100%; max-width: var(--max-w); display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 20px; flex-shrink: 0; padding: 0 15px; }
+        .app-brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden; }
+        .brand-icon-wrap { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); overflow: hidden; background: transparent; flex-shrink: 0; }
         .brand-img { width: 100%; height: 100%; object-fit: cover; }
-        .brand-text { display: flex; flex-direction: column; justify-content: center; }
-        .app-title { font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px; color: var(--text); line-height: 1.1; text-transform: uppercase; white-space: nowrap; }
-        .app-subtitle { font-size: 0.7rem; font-weight: 800; color: var(--text); opacity: 0.7; margin-top: 2px; text-transform: lowercase; }
+        .brand-text { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+        .app-title { font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px; color: var(--text); line-height: 1.1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .app-subtitle { font-size: 0.7rem; font-weight: 800; color: var(--text); opacity: 0.7; margin-top: 2px; text-transform: lowercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .brand-highlight { color: var(--p); font-weight: 900; transition: color 0.3s; text-transform: capitalize; }
-        .top-controls { display: flex; gap: 8px; }
+        .top-controls { display: flex; gap: 8px; flex-shrink: 0; }
         .sq-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--card); border: 1px solid var(--b); color: var(--text); font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow); transition: transform 0.2s ease; }
         .sq-btn:active { transform: scale(0.9); }
         .sq-btn.syncing i { animation: spin 1s linear infinite; }
@@ -169,7 +169,7 @@
             <img src="55340.png" alt="Icon" class="brand-img" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-mosque\'></i>'; this.parentElement.style.background='var(--p)';">
         </div>
         <div class="brand-text">
-            <div class="app-title">Namaz Time &amp; Tracker</div>
+            <div class="app-title">Namaz Times</div>
             <div class="app-subtitle">by <span class="brand-highlight">Type01warrior</span></div>
         </div>
     </div>
@@ -189,6 +189,15 @@
             <div id="user-info" class="auth-info">Signed in as: <span id="user-email" class="auth-email"></span></div>
             <button id="logout-btn" class="t-btn" style="width:100%; display:none; color:#ef4444; margin-bottom:8px;" onclick="logoutUser()">🚪 Logout</button>
             <button id="login-btn" class="t-btn" style="width:100%; margin-bottom:8px;" onclick="goToLogin()">🔐 Sign In / Sign Up</button>
+        </div>
+
+        <div class="modal-title" style="margin-top:16px;margin-bottom:8px;">Layout</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <label class="switch">
+                <input type="checkbox" id="classic-mode-toggle" onchange="toggleClassicMode(this)">
+                <span class="slider"></span>
+            </label>
+            <span style="font-size:0.85rem;">Show Web Tabs (Classic Mode)</span>
         </div>
 
         <div class="modal-title">Select Theme</div>
@@ -220,8 +229,9 @@
     <div class="tab-nav">
         <div class="tab active" onclick="switchTab(event,'live')">Today</div>
         <div class="tab" onclick="switchTab(event,'db')">Dashboard</div>
-        <div class="tab" id="tab-data" onclick="switchTab(event,'data')">Namaz Times</div>
-        <div class="tab" onclick="switchTab(event,'surah')">Surah</div>
+        <div class="tab" id="tab-data" onclick="switchTab(event,'data')">Timings</div>
+        <div class="tab" onclick="switchTab(event,'surah')">Sur-ah List</div>
+        <div class="tab" onclick="switchTab(event,'qibla')">Qibla</div>
     </div>
     
     <div id="live" class="content active">
@@ -962,6 +972,19 @@ function updateLightDarkIcon() {
 function openSettings() { document.getElementById('settings-modal').classList.add('show'); }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
 
+function toggleClassicMode(el) {
+    const enabled = el.checked;
+    localStorage.setItem('classicMode', enabled ? 'true' : 'false');
+    if(window.AndroidBridge && AndroidBridge.setClassicMode) AndroidBridge.setClassicMode(enabled);
+}
+function initClassicMode() {
+    const enabled = localStorage.getItem('classicMode') === 'true';
+    const toggle = document.getElementById('classic-mode-toggle');
+    if(toggle) toggle.checked = enabled;
+    const nav = document.querySelector('.tab-nav');
+    if(nav) nav.style.display = enabled ? 'flex' : 'none';
+}
+
 document.querySelectorAll('.t-btn').forEach(btn => {
     if(btn.getAttribute('data-theme') === savedTheme) btn.classList.add('active-t');
     btn.addEventListener('click', (e) => {
@@ -1016,14 +1039,23 @@ async function toggleWakeLock(el) {
 
 function formatAMPM(t){ if(!t)return"--"; let[h,m]=t.split(':'); let hh=parseInt(h)%12||12, ampm=parseInt(h)>=12?'PM':'AM'; return `${hh}:${m.padStart(2,'0')} ${ampm}`; }
 
-function switchTab(e,id,fromPopstate){ 
-    document.querySelectorAll('.content').forEach(c=>c.classList.remove('active')); 
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); 
-    document.getElementById(id).classList.add('active'); e.currentTarget.classList.add('active'); 
-    document.getElementById('copy-action-group').style.display = (id === 'live' || id === 'surah') ? 'flex' : 'none';
+function switchTab(e,id,fromPopstate){
+    if(id==='qibla'){
+        if(window.AndroidBridge && AndroidBridge.showQibla) AndroidBridge.showQibla();
+        return;
+    }
+    document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    var el = document.getElementById(id); if(el) el.classList.add('active');
+    if(e && e.currentTarget) e.currentTarget.classList.add('active');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    var cag = document.getElementById('copy-action-group');
+    if(cag) cag.style.display = (id === 'live' || id === 'surah') ? 'flex' : 'none';
     if(id==='surah') loadQuran();
     if(id==='data') setTimeout(() => { const r = document.querySelector('.today-row'); if(r) r.scrollIntoView({behavior: 'smooth', block: 'center'}); }, 100);
     if(!fromPopstate) history.pushState({tab:id}, '', '');
+    if(window.AndroidBridge && AndroidBridge.selectNativeTab) AndroidBridge.selectNativeTab(id);
 }
 
 // Handle Android/browser back button — restore previous tab instead of going blank
@@ -1323,6 +1355,7 @@ renderDatabase();
 setInterval(update, 1000); 
 update(); 
 loadQuran();
+initClassicMode();
 
 </script>
 
