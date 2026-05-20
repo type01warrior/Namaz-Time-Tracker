@@ -1,4 +1,4 @@
-# 🕌 Namaz Tracker — Elite Prayer Tracker
+# 🕌 SalahSync — Elite Prayer Tracker
 
 A mobile-first Progressive Web App (PWA) for tracking daily Islamic prayers, viewing accurate prayer timetables, reading Quran Surahs, and syncing data to the cloud via Firebase.
 
